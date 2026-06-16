@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blind Test - Répliques Cultes de Séries</title>
+<style>
+  :root {
+    --bg: #0d0f1a;
+    --panel: #161a2c;
+    --accent: #ff3d6e;
+    --accent2: #3dd6ff;
+    --good: #2ecc71;
+    --bad: #e74c3c;
+    --text: #f1f2f6;
+    --muted: #8a8fa3;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: radial-gradient(circle at top, #1c2240 0%, #0d0f1a 60%);
+    color: var(--text);
+    font-family: "Segoe UI", Arial, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .card {
+    width: 100%;
+    max-width: 640px;
+    background: var(--panel);
+    border-radius: 18px;
+    padding: 32px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  h1 {
+    text-align: center;
+    font-size: 1.6rem;
+    margin: 0 0 4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .subtitle {
+    text-align: center;
+    color: var(--muted);
+    margin-bottom: 28px;
+    font-size: 0.9rem;
+  }
+  .hidden { display: none !important; }
+
+  /* --- Setup screen --- */
+  .field { margin-bottom: 20px; }
+  .field label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--muted);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .choice-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .choice-btn {
+    flex: 1;
+    min-width: 100px;
+    padding: 12px 10px;
+    border-radius: 10px;
+    border: 2px solid #2a2f4a;
+    background: #1c2138;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.15s;
+  }
+  .choice-btn:hover { border-color: var(--accent2); }
+  .choice-btn.selected {
+    border-color: var(--accent);
+    background: linear-gradient(135deg, rgba(255,61,110,0.25), rgba(61,214,255,0.15));
+  }
+  .start-btn {
+    width: 100%;
+    padding: 16px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    color: #0d0f1a;
+    font-weight: 700;
+    font-size: 1.05rem;
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .start-btn:hover { transform: translateY(-2px); }
+  .pool-info {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin-top: -6px;
+    margin-bottom: 18px;
+  }
+
+  /* --- Quiz screen --- */
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  .progress-track {
+    height: 6px;
+    background: #232844;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 18px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    width: 0%;
+    transition: width 0.3s;
+  }
+  .timer-track {
+    height: 5px;
+    background: #232844;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+  .timer-fill {
+    height: 100%;
+    background: var(--good);
+    width: 100%;
+    transition: width 0.2s linear, background 0.3s;
+  }
+  .quote-box {
+    background: #1c2138;
+    border-radius: 14px;
+    padding: 28px 22px;
+    text-align: center;
+    font-size: 1.3rem;
+    font-style: italic;
+    line-height: 1.5;
+    margin-bottom: 26px;
+    min-height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .quote-box::before { content: "“"; }
+  .quote-box::after { content: "”"; }
+  .options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .option-btn {
+    padding: 16px 14px;
+    border-radius: 12px;
+    border: 2px solid #2a2f4a;
+    background: #1c2138;
+    color: var(--text);
+    font-size: 0.95rem;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s;
+  }
+  .option-btn:hover:not(:disabled) { border-color: var(--accent2); transform: translateY(-1px); }
+  .option-btn:disabled { cursor: default; }
+  .option-btn.correct { border-color: var(--good); background: rgba(46,204,113,0.18); }
+  .option-btn.wrong { border-color: var(--bad); background: rgba(231,76,60,0.18); }
+  .next-btn {
+    width: 100%;
+    margin-top: 22px;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    background: #232844;
+    color: var(--text);
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .next-btn:hover { background: #2a3050; }
+  .streak {
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  /* --- End screen --- */
+  .result-score {
+    text-align: center;
+    font-size: 3rem;
+    font-weight: 800;
+    margin: 10px 0 6px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .result-msg {
+    text-align: center;
+    color: var(--muted);
+    margin-bottom: 26px;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>🎬 Blind Test Séries</h1>
+  <div class="subtitle">Devine la série à partir de sa réplique culte</div>
+
+  <!-- SETUP SCREEN -->
+  <div id="setup-screen">
+    <div class="field">
+      <label>Catégorie</label>
+      <div class="choice-row" id="category-row">
+        <button class="choice-btn selected" data-value="all">Toutes</button>
+        <button class="choice-btn" data-value="fr">Séries françaises</button>
+        <button class="choice-btn" data-value="intl">Séries internationales</button>
+        <button class="choice-btn" data-value="anime">Mangas / Animes</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Difficulté</label>
+      <div class="choice-row" id="difficulty-row">
+        <button class="choice-btn selected" data-value="all">Toutes</button>
+        <button class="choice-btn" data-value="facile">Facile</button>
+        <button class="choice-btn" data-value="moyen">Moyen</button>
+        <button class="choice-btn" data-value="difficile">Difficile</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Nombre de questions</label>
+      <div class="choice-row" id="count-row">
+        <button class="choice-btn" data-value="10">10</button>
+        <button class="choice-btn selected" data-value="15">15</button>
+        <button class="choice-btn" data-value="30">30</button>
+        <button class="choice-btn" data-value="9999">Maximum</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Temps par question</label>
+      <div class="choice-row" id="timer-row">
+        <button class="choice-btn" data-value="0">Pas de chrono</button>
+        <button class="choice-btn selected" data-value="15">15 secondes</button>
+        <button class="choice-btn" data-value="10">10 secondes</button>
+      </div>
+    </div>
+    <div class="pool-info" id="pool-info"></div>
+    <button class="start-btn" id="start-btn">Lancer le blind test</button>
+  </div>
+
+  <!-- QUIZ SCREEN -->
+  <div id="quiz-screen" class="hidden">
+    <div class="top-bar">
+      <span id="question-counter">Question 1/15</span>
+      <span>Score: <span id="score-display">0</span> &nbsp; Série: <span class="streak" id="streak-display">0</span></span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="timer-track hidden" id="timer-track"><div class="timer-fill" id="timer-fill"></div></div>
+    <div class="quote-box" id="quote-box">...</div>
+    <div class="options-grid" id="options-grid"></div>
+    <button class="next-btn hidden" id="next-btn">Question suivante →</button>
+  </div>
+
+  <!-- END SCREEN -->
+  <div id="end-screen" class="hidden">
+    <div class="result-score" id="result-score">0/0</div>
+    <div class="result-msg" id="result-msg"></div>
+    <button class="start-btn" id="replay-btn">Rejouer</button>
+  </div>
+</div>
+
+<script>
+// ---- Base de répliques cultes -----------------------------------------
+// category: "fr" (séries françaises), "intl" (séries internationales) ou "anime" (mangas/animes)
+// difficulty: "facile", "moyen" ou "difficile"
+const QUOTES = [
+  { quote: "C'est pas faux.", series: "Kaamelott", category: "fr", difficulty: "facile" },
+  { quote: "Bouge de là !", series: "Kaamelott", category: "fr", difficulty: "facile" },
+  { quote: "Pour de vrai de vrai ?", series: "Kaamelott", category: "fr", difficulty: "moyen" },
+  { quote: "Je dis ça, je dis rien.", series: "Kaamelott", category: "fr", difficulty: "moyen" },
+  { quote: "Au moins celles-là, on les a essayées.", series: "Kaamelott", category: "fr", difficulty: "difficile" },
+  { quote: "Allez, salut !", series: "Caméra Café", category: "fr", difficulty: "difficile" },
+
+  { quote: "L'hiver vient.", series: "Game of Thrones", category: "intl", difficulty: "facile" },
+  { quote: "Tu ne sais rien, Jon Snow.", series: "Game of Thrones", category: "intl", difficulty: "moyen" },
+  { quote: "Valar Morghulis.", series: "Game of Thrones", category: "intl", difficulty: "moyen" },
+  { quote: "Hold the door !", series: "Game of Thrones", category: "intl", difficulty: "difficile" },
+  { quote: "On était en pause !", series: "Friends", category: "intl", difficulty: "facile" },
+  { quote: "How you doin' ?", series: "Friends", category: "intl", difficulty: "facile" },
+  { quote: "C'est légendaire !", series: "How I Met Your Mother", category: "intl", difficulty: "facile" },
+  { quote: "Bazinga !", series: "The Big Bang Theory", category: "intl", difficulty: "facile" },
+  { quote: "Dis mon nom.", series: "Breaking Bad", category: "intl", difficulty: "moyen" },
+  { quote: "Je suis celui qui frappe à la porte.", series: "Breaking Bad", category: "intl", difficulty: "difficile" },
+  { quote: "Tout le monde ment.", series: "Dr House", category: "intl", difficulty: "moyen" },
+  { quote: "C'est ce qu'elle a dit.", series: "The Office", category: "intl", difficulty: "moyen" },
+  { quote: "Les amis ne mentent pas.", series: "Stranger Things", category: "intl", difficulty: "moyen" },
+  { quote: "Au nom des Peaky Blinders.", series: "Peaky Blinders", category: "intl", difficulty: "difficile" },
+  { quote: "Sauver des gens, chasser des bêtes : l'affaire de famille.", series: "Supernatural", category: "intl", difficulty: "difficile" },
+  { quote: "Allô Chuck, c'est Gossip Girl.", series: "Gossip Girl", category: "intl", difficulty: "moyen" },
+  { quote: "Le jeu commence.", series: "Sherlock", category: "intl", difficulty: "moyen" },
+  { quote: "Plata o plomo.", series: "Narcos", category: "intl", difficulty: "moyen" },
+  { quote: "Resistance.", series: "La Casa de Papel", category: "intl", difficulty: "moyen" },
+  { quote: "Besoin d'un avocat véreux ? Appelez Saul !", series: "Better Call Saul", category: "intl", difficulty: "difficile" },
+
+  { quote: "Goldorak, go !", series: "Goldorak", category: "anime", difficulty: "moyen" },
+  { quote: "Tu es déjà mort.", series: "Ken le Survivant", category: "anime", difficulty: "moyen" },
+  { quote: "Au nom de la Lune, je te punirai !", series: "Sailor Moon", category: "anime", difficulty: "facile" },
+  { quote: "Mokkori !", series: "Nicky Larson", category: "anime", difficulty: "difficile" },
+  { quote: "Pégase, comète !", series: "Saint Seiya (Les Chevaliers du Zodiaque)", category: "anime", difficulty: "moyen" },
+  { quote: "Pikachu, je te choisis !", series: "Pokémon", category: "anime", difficulty: "facile" },
+  { quote: "Que le duel commence !", series: "Yu-Gi-Oh!", category: "anime", difficulty: "facile" },
+  { quote: "Kaméhaméha !", series: "Dragon Ball Z", category: "anime", difficulty: "facile" },
+  { quote: "Je deviendrai le roi des pirates !", series: "One Piece", category: "anime", difficulty: "facile" },
+  { quote: "Je deviendrai Hokage !", series: "Naruto", category: "anime", difficulty: "facile" },
+  { quote: "Je suis Kira.", series: "Death Note", category: "anime", difficulty: "moyen" },
+  { quote: "Bankai !", series: "Bleach", category: "anime", difficulty: "moyen" },
+  { quote: "La loi de l'échange équivalent.", series: "Fullmetal Alchemist", category: "anime", difficulty: "moyen" },
+  { quote: "Offrez vos cœurs !", series: "L'Attaque des Titans", category: "anime", difficulty: "difficile" },
+  { quote: "Plus Ultra !", series: "My Hero Academia", category: "anime", difficulty: "facile" },
+  { quote: "Je suis juste un super-héros amateur.", series: "One Punch Man", category: "anime", difficulty: "difficile" },
+
+  { quote: "Bref.", series: "Bref.", category: "fr", difficulty: "facile" },
+  { quote: "Bonjour à toi, Visiteur du Futur.", series: "Le Visiteur du Futur", category: "fr", difficulty: "difficile" },
+  { quote: "Vous permettez ?", series: "Capitaine Marleau", category: "fr", difficulty: "moyen" },
+
+  { quote: "Dracarys !", series: "Game of Thrones", category: "intl", difficulty: "facile" },
+  { quote: "Un Lannister paie toujours ses dettes.", series: "Game of Thrones", category: "intl", difficulty: "moyen" },
+  { quote: "Le Nord se souvient.", series: "Game of Thrones", category: "intl", difficulty: "moyen" },
+  { quote: "Ouais, la science !", series: "Breaking Bad", category: "intl", difficulty: "moyen" },
+  { quote: "En tenue !", series: "How I Met Your Mother", category: "intl", difficulty: "facile" },
+  { quote: "Défi accepté !", series: "How I Met Your Mother", category: "intl", difficulty: "facile" },
+  { quote: "Tu as rencontré Ted ?", series: "How I Met Your Mother", category: "intl", difficulty: "moyen" },
+  { quote: "La vérité est ailleurs.", series: "X-Files : Aux frontières du réel", category: "intl", difficulty: "moyen" },
+  { quote: "Je veux croire.", series: "X-Files : Aux frontières du réel", category: "intl", difficulty: "difficile" },
+  { quote: "Vivants ensemble, morts seuls.", series: "Lost, les disparus", category: "intl", difficulty: "difficile" },
+  { quote: "This is the way.", series: "The Mandalorian", category: "intl", difficulty: "facile" },
+  { quote: "Bonjour, Newman.", series: "Seinfeld", category: "intl", difficulty: "difficile" },
+  { quote: "Choisis-moi, aime-moi.", series: "Grey's Anatomy", category: "intl", difficulty: "difficile" },
+  { quote: "Ce soir, c'est le grand soir.", series: "Dexter", category: "intl", difficulty: "difficile" },
+  { quote: "Nous sommes les morts qui marchent.", series: "The Walking Dead", category: "intl", difficulty: "moyen" },
+  { quote: "Je n'ai pas de rêves, j'ai des objectifs.", series: "Suits : avocats sur mesure", category: "intl", difficulty: "difficile" },
+
+  { quote: "Fusion... HA !", series: "Dragon Ball Z", category: "anime", difficulty: "difficile" },
+  { quote: "Le ballon, c'est mon ami !", series: "Olive et Tom", category: "anime", difficulty: "moyen" },
+  { quote: "L'amour de la liberté nous a fait prendre la route de l'espace.", series: "Capitaine Albator", category: "anime", difficulty: "difficile" },
+  { quote: "Je suis le meilleur joueur du Japon !", series: "Slam Dunk", category: "anime", difficulty: "moyen" },
+  { quote: "See you, space cowboy...", series: "Cowboy Bebop", category: "anime", difficulty: "difficile" },
+  { quote: "Je t'ordonne.", series: "Code Geass", category: "anime", difficulty: "moyen" },
+  { quote: "Yare yare daze...", series: "JoJo's Bizarre Adventure", category: "anime", difficulty: "difficile" },
+  { quote: "Extension de Territoire !", series: "Jujutsu Kaisen", category: "anime", difficulty: "moyen" },
+  { quote: "Le One Piece existe !", series: "One Piece", category: "anime", difficulty: "difficile" },
+  { quote: "Dattebayo !", series: "Naruto", category: "anime", difficulty: "moyen" },
+  { quote: "Tu peux devenir un héros !", series: "My Hero Academia", category: "anime", difficulty: "moyen" },
+  { quote: "Attrapez-les tous !", series: "Pokémon", category: "anime", difficulty: "facile" },
+];
+
+// ---- État du jeu ---------------------------------------------------------
+let settings = { category: "all", difficulty: "all", count: 15, timer: 15 };
+let quiz = [];
+let currentIndex = 0;
+let score = 0;
+let streak = 0;
+let timerInterval = null;
+let timeLeft = 0;
+let answered = false;
+
+// ---- Sélecteurs DOM -------------------------------------------------------
+const setupScreen = document.getElementById("setup-screen");
+const quizScreen = document.getElementById("quiz-screen");
+const endScreen = document.getElementById("end-screen");
+const poolInfo = document.getElementById("pool-info");
+
+function setupChoiceRow(rowId, key, parse) {
+  const row = document.getElementById(rowId);
+  row.querySelectorAll(".choice-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      row.querySelectorAll(".choice-btn").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      settings[key] = parse(btn.dataset.value);
+      updatePoolInfo();
+    });
+  });
+}
+setupChoiceRow("category-row", "category", v => v);
+setupChoiceRow("difficulty-row", "difficulty", v => v);
+setupChoiceRow("count-row", "count", v => parseInt(v, 10));
+setupChoiceRow("timer-row", "timer", v => parseInt(v, 10));
+
+function poolForFilters(category, difficulty) {
+  return QUOTES.filter(q =>
+    (category === "all" || q.category === category) &&
+    (difficulty === "all" || q.difficulty === difficulty)
+  );
+}
+
+function updatePoolInfo() {
+  const pool = poolForFilters(settings.category, settings.difficulty);
+  poolInfo.textContent = `${pool.length} réplique(s) disponible(s) avec ces filtres`;
+}
+updatePoolInfo();
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function buildQuiz() {
+  const pool = poolForFilters(settings.category, settings.difficulty);
+  const allSeries = [...new Set(QUOTES.map(q => q.series))];
+  const n = Math.min(settings.count, pool.length);
+  const picked = shuffle(pool).slice(0, n);
+
+  return picked.map(q => {
+    // Préfère des intrus de la même catégorie pour éviter les réponses trop évidentes.
+    const sameCategorySeries = [...new Set(QUOTES.filter(o => o.category === q.category).map(o => o.series))];
+    let candidates = sameCategorySeries.filter(s => s !== q.series);
+    if (candidates.length < 3) {
+      candidates = allSeries.filter(s => s !== q.series);
+    }
+    const distractors = shuffle(candidates).slice(0, 3);
+    const options = shuffle([q.series, ...distractors]);
+    return { quote: q.quote, correct: q.series, options };
+  });
+}
+
+// ---- Démarrage -------------------------------------------------------
+document.getElementById("start-btn").addEventListener("click", () => {
+  quiz = buildQuiz();
+  if (quiz.length === 0) return;
+  currentIndex = 0;
+  score = 0;
+  streak = 0;
+  setupScreen.classList.add("hidden");
+  endScreen.classList.add("hidden");
+  quizScreen.classList.remove("hidden");
+  renderQuestion();
+});
+
+document.getElementById("replay-btn").addEventListener("click", () => {
+  endScreen.classList.add("hidden");
+  setupScreen.classList.remove("hidden");
+});
+
+document.getElementById("next-btn").addEventListener("click", () => {
+  currentIndex++;
+  if (currentIndex >= quiz.length) {
+    showEndScreen();
+  } else {
+    renderQuestion();
+  }
+});
+
+// ---- Rendu d'une question ----------------------------------------------
+function renderQuestion() {
+  answered = false;
+  clearInterval(timerInterval);
+
+  const q = quiz[currentIndex];
+  document.getElementById("question-counter").textContent = `Question ${currentIndex + 1}/${quiz.length}`;
+  document.getElementById("score-display").textContent = score;
+  document.getElementById("streak-display").textContent = streak;
+  document.getElementById("progress-fill").style.width = `${(currentIndex / quiz.length) * 100}%`;
+  document.getElementById("quote-box").textContent = q.quote;
+  document.getElementById("next-btn").classList.add("hidden");
+
+  const grid = document.getElementById("options-grid");
+  grid.innerHTML = "";
+  q.options.forEach(opt => {
+    const btn = document.createElement("button");
+    btn.className = "option-btn";
+    btn.textContent = opt;
+    btn.addEventListener("click", () => selectAnswer(btn, opt, q.correct));
+    grid.appendChild(btn);
+  });
+
+  const timerTrack = document.getElementById("timer-track");
+  const timerFill = document.getElementById("timer-fill");
+  if (settings.timer > 0) {
+    timerTrack.classList.remove("hidden");
+    timeLeft = settings.timer;
+    timerFill.style.width = "100%";
+    timerFill.style.background = "var(--good)";
+    timerInterval = setInterval(() => {
+      timeLeft -= 0.1;
+      const pct = Math.max(0, (timeLeft / settings.timer) * 100);
+      timerFill.style.width = `${pct}%`;
+      if (pct < 30) timerFill.style.background = "var(--bad)";
+      else if (pct < 60) timerFill.style.background = "#f1c40f";
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        revealAnswer(null, q.correct);
+      }
+    }, 100);
+  } else {
+    timerTrack.classList.add("hidden");
+  }
+}
+
+function selectAnswer(btn, chosen, correct) {
+  if (answered) return;
+  clearInterval(timerInterval);
+  revealAnswer(chosen, correct, btn);
+}
+
+function revealAnswer(chosen, correct, clickedBtn) {
+  if (answered) return;
+  answered = true;
+  const buttons = document.querySelectorAll(".option-btn");
+  buttons.forEach(b => {
+    b.disabled = true;
+    if (b.textContent === correct) b.classList.add("correct");
+    else if (b === clickedBtn) b.classList.add("wrong");
+  });
+
+  if (chosen === correct) {
+    score++;
+    streak++;
+  } else {
+    streak = 0;
+  }
+  document.getElementById("score-display").textContent = score;
+  document.getElementById("streak-display").textContent = streak;
+  document.getElementById("progress-fill").style.width = `${((currentIndex + 1) / quiz.length) * 100}%`;
+  document.getElementById("next-btn").classList.remove("hidden");
+}
+
+// ---- Écran de fin ----------------------------------------------------
+function showEndScreen() {
+  quizScreen.classList.add("hidden");
+  endScreen.classList.remove("hidden");
+  document.getElementById("result-score").textContent = `${score}/${quiz.length}`;
+  const pct = quiz.length ? score / quiz.length : 0;
+  let msg;
+  if (pct === 1) msg = "Score parfait, tu es une encyclopédie des séries ! 🏆";
+  else if (pct >= 0.75) msg = "Très solide, tu connais tes classiques ! 🎉";
+  else if (pct >= 0.5) msg = "Pas mal, mais il y a encore des séries à rattraper. 📺";
+  else msg = "Direction le canapé pour quelques marathons de séries ! 😅";
+  document.getElementById("result-msg").textContent = msg;
+}
+</script>
+</body>
+</html>
