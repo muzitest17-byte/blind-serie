@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Blind Série - Répliques Cultes de Séries</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <style>
   :root {
     --bg: #0d0f1a;
@@ -195,6 +196,81 @@
     font-weight: 700;
   }
 
+  /* --- Battle screen --- */
+  .back-link {
+    color: var(--muted);
+    font-size: 0.85rem;
+    cursor: pointer;
+    margin-bottom: 18px;
+    display: inline-block;
+  }
+  .back-link:hover { color: var(--text); }
+  .section-title {
+    text-align: center;
+    font-size: 1.3rem;
+    margin: 0 0 10px;
+    color: var(--text);
+  }
+  .battle-desc {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.88rem;
+    margin-bottom: 22px;
+    line-height: 1.5;
+  }
+  #qr-container { margin-top: 24px; text-align: center; }
+  #qr-code-box {
+    display: inline-block;
+    background: #fff;
+    padding: 14px;
+    border-radius: 14px;
+    margin-bottom: 14px;
+  }
+  .qr-url {
+    font-size: 0.7rem;
+    color: var(--muted);
+    word-break: break-all;
+    margin-bottom: 10px;
+    padding: 0 10px;
+  }
+  .qr-instructions {
+    font-size: 0.85rem;
+    color: var(--accent2);
+    margin-bottom: 20px;
+  }
+  .players-badge {
+    display: inline-block;
+    background: rgba(255,61,110,0.18);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: 8px;
+    padding: 4px 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+  .battle-end-score {
+    text-align: center;
+    font-size: 4rem;
+    font-weight: 800;
+    margin: 8px 0 4px;
+    background: linear-gradient(90deg, #ffd700, var(--accent));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .battle-share-box {
+    background: #1c2138;
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin: 16px 0;
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: var(--accent2);
+  }
+
   /* --- End screen --- */
   .result-score {
     text-align: center;
@@ -258,6 +334,7 @@
     </div>
     <div class="pool-info" id="pool-info"></div>
     <button class="start-btn" id="start-btn">Lancer le blind test</button>
+    <button class="start-btn" id="battle-btn" style="margin-top:10px;background:linear-gradient(90deg,#ff8c00,var(--accent));">⚔️ Mode Battle (jusqu'à 8 joueurs)</button>
   </div>
 
   <!-- QUIZ SCREEN -->
@@ -277,7 +354,40 @@
   <div id="end-screen" class="hidden">
     <div class="result-score" id="result-score">0/0</div>
     <div class="result-msg" id="result-msg"></div>
+    <div id="battle-end-block" class="hidden">
+      <div class="battle-share-box" id="battle-share-text"></div>
+      <div style="color:var(--muted);font-size:0.8rem;text-align:center;margin-bottom:16px;">Lis ton score à voix haute pour te comparer aux autres joueurs !</div>
+    </div>
     <button class="start-btn" id="replay-btn">Rejouer</button>
+  </div>
+
+  <!-- BATTLE SCREEN -->
+  <div id="battle-screen" class="hidden">
+    <span class="back-link" id="battle-back">← Retour aux réglages</span>
+    <h2 class="section-title">⚔️ Mode Battle</h2>
+    <p class="battle-desc">
+      Génère un QR code que chaque joueur scanne depuis son téléphone.<br>
+      Tout le monde joue les <strong>mêmes questions dans le même ordre</strong>, puis comparez vos scores !
+    </p>
+    <div class="field">
+      <label>Nombre de joueurs</label>
+      <div class="choice-row" id="players-row">
+        <button class="choice-btn" data-value="2">2</button>
+        <button class="choice-btn" data-value="3">3</button>
+        <button class="choice-btn" data-value="4">4</button>
+        <button class="choice-btn selected" data-value="5">5</button>
+        <button class="choice-btn" data-value="6">6</button>
+        <button class="choice-btn" data-value="7">7</button>
+        <button class="choice-btn" data-value="8">8</button>
+      </div>
+    </div>
+    <button class="start-btn" id="generate-qr-btn">⚡ Générer le QR Code</button>
+    <div id="qr-container" class="hidden">
+      <div id="qr-code-box"></div>
+      <div class="qr-url" id="qr-url-text"></div>
+      <div class="qr-instructions">📱 Scannez ou partagez le lien — mêmes questions pour tout le monde !</div>
+      <button class="start-btn" id="host-play-btn" style="background:linear-gradient(90deg,#ff8c00,var(--accent));">Je joue aussi →</button>
+    </div>
   </div>
 </div>
 
@@ -390,8 +500,30 @@ const QUOTES = [
   { quote: "Je deviendrai le meilleur buteur du monde !", series: "Blue Lock", category: "anime", difficulty: "facile" },
 ];
 
+// ---- Graine aléatoire pour le mode battle --------------------------------
+function seededRng(seed) {
+  let s = seed >>> 0;
+  return () => {
+    s = Math.imul(s ^ (s >>> 16), 0x45d9f3b);
+    s = Math.imul(s ^ (s >>> 16), 0x45d9f3b);
+    s ^= s >>> 16;
+    return (s >>> 0) / 0xffffffff;
+  };
+}
+function seededShuffle(arr, rng) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 // ---- État du jeu ---------------------------------------------------------
 let settings = { category: "all", difficulty: "all", count: 15, timer: 15 };
+let battleMode = false;
+let gameSeed = null;
+let playerCount = 5;
 let quiz = [];
 let currentIndex = 0;
 let score = 0;
@@ -448,23 +580,22 @@ function buildQuiz() {
   const pool = poolForFilters(settings.category, settings.difficulty);
   const allSeries = [...new Set(QUOTES.map(q => q.series))];
   const n = Math.min(settings.count, pool.length);
-  const picked = shuffle(pool).slice(0, n);
+
+  const rng = gameSeed !== null ? seededRng(gameSeed) : null;
+  const picked = (rng ? seededShuffle(pool, rng) : shuffle(pool)).slice(0, n);
 
   return picked.map(q => {
-    // Préfère des intrus de la même catégorie pour éviter les réponses trop évidentes.
     const sameCategorySeries = [...new Set(QUOTES.filter(o => o.category === q.category).map(o => o.series))];
     let candidates = sameCategorySeries.filter(s => s !== q.series);
-    if (candidates.length < 3) {
-      candidates = allSeries.filter(s => s !== q.series);
-    }
-    const distractors = shuffle(candidates).slice(0, 3);
-    const options = shuffle([q.series, ...distractors]);
+    if (candidates.length < 3) candidates = allSeries.filter(s => s !== q.series);
+    const distractors = (rng ? seededShuffle(candidates, rng) : shuffle(candidates)).slice(0, 3);
+    const options = rng ? seededShuffle([q.series, ...distractors], rng) : shuffle([q.series, ...distractors]);
     return { quote: q.quote, correct: q.series, options };
   });
 }
 
 // ---- Démarrage -------------------------------------------------------
-document.getElementById("start-btn").addEventListener("click", () => {
+function launchQuiz() {
   quiz = buildQuiz();
   if (quiz.length === 0) return;
   currentIndex = 0;
@@ -472,14 +603,73 @@ document.getElementById("start-btn").addEventListener("click", () => {
   streak = 0;
   setupScreen.classList.add("hidden");
   endScreen.classList.add("hidden");
+  document.getElementById("battle-screen").classList.add("hidden");
   quizScreen.classList.remove("hidden");
   renderQuestion();
+}
+
+document.getElementById("start-btn").addEventListener("click", () => {
+  battleMode = false;
+  gameSeed = null;
+  launchQuiz();
 });
 
 document.getElementById("replay-btn").addEventListener("click", () => {
   endScreen.classList.add("hidden");
+  battleMode = false;
+  gameSeed = null;
   setupScreen.classList.remove("hidden");
 });
+
+// ---- Battle mode -------------------------------------------------------
+const battleScreen = document.getElementById("battle-screen");
+
+document.getElementById("battle-btn").addEventListener("click", () => {
+  setupScreen.classList.add("hidden");
+  battleScreen.classList.remove("hidden");
+  document.getElementById("qr-container").classList.add("hidden");
+  document.getElementById("qr-code-box").innerHTML = "";
+});
+
+document.getElementById("battle-back").addEventListener("click", () => {
+  battleScreen.classList.add("hidden");
+  setupScreen.classList.remove("hidden");
+});
+
+setupChoiceRow("players-row", "playerCount", v => parseInt(v, 10));
+
+document.getElementById("generate-qr-btn").addEventListener("click", () => {
+  const seed = Math.floor(Math.random() * 0xffffffff);
+  const base = window.location.origin + window.location.pathname;
+  const url = `${base}?battle=1&cat=${settings.category}&diff=${settings.difficulty}&n=${settings.count}&timer=${settings.timer}&seed=${seed}`;
+
+  document.getElementById("qr-url-text").textContent = url;
+  const box = document.getElementById("qr-code-box");
+  box.innerHTML = "";
+  new QRCode(box, { text: url, width: 200, height: 200, colorDark: "#000", colorLight: "#fff" });
+  document.getElementById("qr-container").classList.remove("hidden");
+
+  gameSeed = seed;
+  battleMode = true;
+});
+
+document.getElementById("host-play-btn").addEventListener("click", () => {
+  battleMode = true;
+  launchQuiz();
+});
+
+// ---- Lecture des paramètres URL (mode battle depuis QR) -----------------
+(function parseBattleParams() {
+  const p = new URLSearchParams(window.location.search);
+  if (!p.get("battle")) return;
+  battleMode = true;
+  gameSeed = parseInt(p.get("seed"), 10) || null;
+  const cat = p.get("cat"); if (cat) settings.category = cat;
+  const diff = p.get("diff"); if (diff) settings.difficulty = diff;
+  const n = parseInt(p.get("n"), 10); if (n) settings.count = n;
+  const timer = parseInt(p.get("timer"), 10); if (!isNaN(timer)) settings.timer = timer;
+  setTimeout(launchQuiz, 300);
+})();
 
 document.getElementById("next-btn").addEventListener("click", () => {
   currentIndex++;
@@ -568,14 +758,24 @@ function revealAnswer(chosen, correct, clickedBtn) {
 function showEndScreen() {
   quizScreen.classList.add("hidden");
   endScreen.classList.remove("hidden");
-  document.getElementById("result-score").textContent = `${score}/${quiz.length}`;
   const pct = quiz.length ? score / quiz.length : 0;
-  let msg;
-  if (pct === 1) msg = "Score parfait, tu es une encyclopédie des séries ! 🏆";
-  else if (pct >= 0.75) msg = "Très solide, tu connais tes classiques ! 🎉";
-  else if (pct >= 0.5) msg = "Pas mal, mais il y a encore des séries à rattraper. 📺";
-  else msg = "Direction le canapé pour quelques marathons de séries ! 😅";
-  document.getElementById("result-msg").textContent = msg;
+
+  if (battleMode) {
+    document.getElementById("result-score").style.display = "none";
+    document.getElementById("result-msg").textContent = "";
+    document.getElementById("battle-end-block").classList.remove("hidden");
+    document.getElementById("battle-share-text").textContent = `🏆 Mon score : ${score} / ${quiz.length} (${Math.round(pct * 100)} %)`;
+  } else {
+    document.getElementById("result-score").style.display = "";
+    document.getElementById("result-score").textContent = `${score}/${quiz.length}`;
+    document.getElementById("battle-end-block").classList.add("hidden");
+    let msg;
+    if (pct === 1) msg = "Score parfait, tu es une encyclopédie des séries ! 🏆";
+    else if (pct >= 0.75) msg = "Très solide, tu connais tes classiques ! 🎉";
+    else if (pct >= 0.5) msg = "Pas mal, mais il y a encore des séries à rattraper. 📺";
+    else msg = "Direction le canapé pour quelques marathons de séries ! 😅";
+    document.getElementById("result-msg").textContent = msg;
+  }
 }
 </script>
 </body>
