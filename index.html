@@ -522,6 +522,7 @@ function seededShuffle(arr, rng) {
 // ---- État du jeu ---------------------------------------------------------
 let settings = { category: "all", difficulty: "all", count: 15, timer: 15 };
 let battleMode = false;
+let playerMode = false; // true = joueur ayant scanné le QR (pas le host)
 let gameSeed = null;
 let playerCount = 5;
 let quiz = [];
@@ -616,9 +617,14 @@ document.getElementById("start-btn").addEventListener("click", () => {
 
 document.getElementById("replay-btn").addEventListener("click", () => {
   endScreen.classList.add("hidden");
-  battleMode = false;
-  gameSeed = null;
-  setupScreen.classList.remove("hidden");
+  if (playerMode) {
+    // Joueur QR : relance exactement la même partie, pas d'accès au setup
+    launchQuiz();
+  } else {
+    battleMode = false;
+    gameSeed = null;
+    setupScreen.classList.remove("hidden");
+  }
 });
 
 // ---- Battle mode -------------------------------------------------------
@@ -662,12 +668,20 @@ document.getElementById("host-play-btn").addEventListener("click", () => {
 (function parseBattleParams() {
   const p = new URLSearchParams(window.location.search);
   if (!p.get("battle")) return;
+
+  // Ce téléphone est un JOUEUR (a scanné le QR) — accès limité au quiz uniquement
   battleMode = true;
+  playerMode = true;
   gameSeed = parseInt(p.get("seed"), 10) || null;
   const cat = p.get("cat"); if (cat) settings.category = cat;
   const diff = p.get("diff"); if (diff) settings.difficulty = diff;
   const n = parseInt(p.get("n"), 10); if (n) settings.count = n;
   const timer = parseInt(p.get("timer"), 10); if (!isNaN(timer)) settings.timer = timer;
+
+  // Cache tout le reste de l'interface — le joueur ne voit que le quiz
+  setupScreen.classList.add("hidden");
+  document.getElementById("battle-screen").classList.add("hidden");
+
   setTimeout(launchQuiz, 300);
 })();
 
@@ -765,6 +779,8 @@ function showEndScreen() {
     document.getElementById("result-msg").textContent = "";
     document.getElementById("battle-end-block").classList.remove("hidden");
     document.getElementById("battle-share-text").textContent = `🏆 Mon score : ${score} / ${quiz.length} (${Math.round(pct * 100)} %)`;
+    // Joueur QR : le bouton rejoue la même partie sans aller au setup
+    document.getElementById("replay-btn").textContent = playerMode ? "🔄 Rejouer (mêmes questions)" : "Rejouer";
   } else {
     document.getElementById("result-score").style.display = "";
     document.getElementById("result-score").textContent = `${score}/${quiz.length}`;
